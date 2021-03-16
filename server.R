@@ -1,12 +1,12 @@
 library(readr)
 library(tidyverse)
 library(png)
-library(DT)
+
 
 
 setwd(paste0(getwd(), "/www"))
-stats <- read_csv("stats.csv")
-
+stats <- read_csv("DATA.csv")
+playin <- read_csv("playin.csv")
 
 server <- function(input, output, session){
 
@@ -27,60 +27,114 @@ server <- function(input, output, session){
                  input$FT,
                  input$Rand),{
                    
+                   
   stats <- stats %>% mutate(Weight = (input$PPG/10)*stats$ppgR + input$RPG/10 * stats$rpgR + input$APG/10 * stats$apgR +
-                              input$Three/10 * stats$`3R` + input$SoS/10 * stats$SoSR + input$OEff/10 * stats$Orank + 
+                              input$Three/10 * stats$X3R + input$SoS/10 * stats$SoSR + input$OEff/10 * stats$Orank + 
                               input$DEff/10 * stats$Drank + input$EffM/10 * stats$EM + input$TEff/10 * stats$Tempo +
                               input$WinPer/10 * stats$WinPerc + input$eFG/10 * stats$eFGR + input$TOV/10 * stats$TOVR +
                               input$TRB/10 *stats$TRBR + input$FT/10 *stats$FTR)
   
+
+  playin <- playin %>% mutate(Weight = (input$PPG/10)*playin$ppgR + input$RPG/10 * playin$rpgR + input$APG/10 * playin$apgR +
+               input$Three/10 * playin$X3R + input$SoS/10 * playin$SoSR + input$OEff/10 * playin$Orank + 
+               input$DEff/10 * playin$Drank + input$EffM/10 * playin$EM + input$TEff/10 * playin$Tempo +
+               input$WinPer/10 * playin$WinPerc + input$eFG/10 * playin$eFGR + input$TOV/10 * playin$TOVR +
+               input$TRB/10 *playin$TRBR + input$FT/10 *playin$FTR)
+  
+
+  #Play-in
+  if(playin[1,35] > stats[2,35]) stats[2,] <- playin[1,]
+  if(playin[2,35] > stats[10,35]) stats[10,] <- playin[2,]
+  if(playin[3,35] > stats[18,35]) stats[18,] <- playin[3,]
+  if(playin[4,35] > stats[26,35]) stats[26,] <- playin[4,]
+
+  
  #Randomly select percentage of rows and multiply them by a random val between 1,2
  #set seed for reproduceability
-  set.seed(1)
+  set.seed(69)
+  observeEvent(input$Rand, {
   y <- sample(1:nrow(stats), ceiling(input$Rand/10 * nrow(stats)), replace = T)
-  set.seed(1)
-  stats[y, ]$Weight <- round(stats[y,]$Weight * runif(length(y), 1, 2),1)
+  set.seed(69)
+  stats[y, ]$Weight <- round(stats[y,]$Weight * runif(length(y), 1, 5),1)
+  })
+
   
-  j<-16
-  k<-16
-  m<- 9
-  stats2 <- data.frame(Seed= numeric(8), Team=character(8), Weight=numeric(8), stringsAsFactors = F)
-  for(i in 1:16){
-    if(i==m) break
-    stats2$Seed[i] <- ifelse(stats[i,34]$Weight > stats[j,34]$Weight, stats$Seed[i], stats$Seed[j])
-    stats2$Team[i] <- ifelse(stats[i,34]$Weight > stats[j,34]$Weight, stats$Team[i], stats$Team[j])
-    stats2$Weight[i] <- ifelse(stats[i,34]$Weight > stats[j,34]$Weight, stats$Weight[i], stats$Weight[j])
-    j=j-1
+  stats2 <- data.frame(Seed= numeric(32), Team=character(32), Weight=numeric(32), stringsAsFactors = F)
+  j<-1
+  for(i in seq(1,16,2)){
+
+    stats2$Seed[j] <- ifelse(stats[i,35]$Weight > stats[i+1,35]$Weight, stats$Seed[i], stats$Seed[i+1])
+    stats2$Team[j] <- ifelse(stats[i,35]$Weight > stats[i+1,35]$Weight, stats$Team[i], stats$Team[i+1])
+    stats2$Weight[j] <- ifelse(stats[i,35]$Weight > stats[i+1,35]$Weight, stats$Weight[i], stats$Weight[i+1])
     
+    stats2$Seed[j+8] <- ifelse(stats[i+16,35]$Weight > stats[i+16+1,35]$Weight, stats$Seed[i+16], stats$Seed[i+16+1])
+    stats2$Team[j+8] <- ifelse(stats[i+16,35]$Weight > stats[i+16+1,35]$Weight, stats$Team[i+ 16], stats$Team[i+16+1])
+    stats2$Weight[j+8] <- ifelse(stats[i+16,35]$Weight > stats[i+16+1,35]$Weight, stats$Weight[i+16], stats$Weight[i+16+1])
+    
+    stats2$Seed[j+16] <- ifelse(stats[i+32,35]$Weight > stats[i+32+1,35]$Weight, stats$Seed[i+32], stats$Seed[i+32+1])
+    stats2$Team[j+16] <- ifelse(stats[i+32,35]$Weight > stats[i+32+1,35]$Weight, stats$Team[i+ 32], stats$Team[i+32+1])
+    stats2$Weight[j+16] <- ifelse(stats[i+32,35]$Weight > stats[i+32+1,35]$Weight, stats$Weight[i+32], stats$Weight[i+32+1])
+    
+    stats2$Seed[j+24] <- ifelse(stats[i+48,35]$Weight > stats[i+48+1,35]$Weight, stats$Seed[i+48], stats$Seed[i+48+1])
+    stats2$Team[j+24] <- ifelse(stats[i+48,35]$Weight > stats[i+48+1,35]$Weight, stats$Team[i+ 48], stats$Team[i+48+1])
+    stats2$Weight[j+24] <- ifelse(stats[i+48,35]$Weight > stats[i+48+1,35]$Weight, stats$Weight[i+48], stats$Weight[i+48+1])
+    
+    j <- j+1
   }
   stats2 <<- stats2
-  
-  stats3 <- data.frame(Seed= numeric(8), Team=character(8), Weight=numeric(8), stringsAsFactors = F)
+
+  stats3 <- data.frame(Seed= numeric(16), Team=character(16), Weight=numeric(16), stringsAsFactors = F)
   j <- 1
   for(i in seq(1,8,2)){
     stats3$Seed[j] <- ifelse(stats2$Weight[i] > stats2$Weight[i+1], stats2$Seed[i], stats2$Seed[i+1])
     stats3$Team[j] <- ifelse(stats2$Weight[i] > stats2$Weight[i+1], stats2$Team[i], stats2$Team[i+1])
     stats3$Weight[j] <- ifelse(stats2$Weight[i] > stats2$Weight[i+1], stats2$Weight[i], stats2$Weight[i+1])
+    
+    stats3$Seed[j+4] <- ifelse(stats2$Weight[i+8] > stats2$Weight[i+8+1], stats2$Seed[i+8], stats2$Seed[i+8+1])
+    stats3$Team[j+4] <- ifelse(stats2$Weight[i+8] > stats2$Weight[i+8+1], stats2$Team[i+8], stats2$Team[i+8+1])
+    stats3$Weight[j+4] <- ifelse(stats2$Weight[i+8] > stats2$Weight[i+8+1], stats2$Weight[i+8], stats2$Weight[i+8+1])
+    
+    stats3$Seed[j+8] <- ifelse(stats2$Weight[i + 16] > stats2$Weight[i+16+1], stats2$Seed[i+16], stats2$Seed[i+16+1])
+    stats3$Team[j+8] <- ifelse(stats2$Weight[i + 16] > stats2$Weight[i+16+1], stats2$Team[i+16], stats2$Team[i+16+1])
+    stats3$Weight[j+8] <- ifelse(stats2$Weight[i + 16] > stats2$Weight[i+16+1], stats2$Weight[i+16], stats2$Weight[i+16+1])
+    
+    stats3$Seed[j+12] <- ifelse(stats2$Weight[i + 24] > stats2$Weight[i+24+1], stats2$Seed[i+24], stats2$Seed[i+24+1])
+    stats3$Team[j+12] <- ifelse(stats2$Weight[i + 24] > stats2$Weight[i+24+1], stats2$Team[i+24], stats2$Team[i+24+1])
+    stats3$Weight[j+12] <- ifelse(stats2$Weight[i + 24] > stats2$Weight[i+24+1], stats2$Weight[i+24], stats2$Weight[i+24+1])
     j <- j+1
   }
   
   stats3 <<- stats3
   
-  stats4 <- data.frame(Seed= numeric(4), Team=character(4), Weight=numeric(4), stringsAsFactors = F)
+  stats4 <- data.frame(Seed= numeric(8), Team=character(8), Weight=numeric(8), stringsAsFactors = F)
   j <- 1
   for(i in seq(1,4,2)){
     stats4$Seed[j] <- ifelse(stats3$Weight[i] > stats3$Weight[i+1], stats3$Seed[i], stats3$Seed[i+1])
     stats4$Team[j] <- ifelse(stats3$Weight[i] > stats3$Weight[i+1], stats3$Team[i], stats3$Team[i+1])
     stats4$Weight[j] <- ifelse(stats3$Weight[i] > stats3$Weight[i+1], stats3$Weight[i], stats3$Weight[i+1])
+    
+    stats4$Seed[j+2] <- ifelse(stats3$Weight[i+4] > stats3$Weight[i+4+1], stats3$Seed[i+4], stats3$Seed[i+4+1])
+    stats4$Team[j+2] <- ifelse(stats3$Weight[i+4] > stats3$Weight[i+4+1], stats3$Team[i+4], stats3$Team[i+4+1])
+    stats4$Weight[j+2] <- ifelse(stats3$Weight[i+4] > stats3$Weight[i+4+1], stats3$Weight[i+4], stats3$Weight[i+4+1])
+    
+    stats4$Seed[j+4] <- ifelse(stats3$Weight[i+8] > stats3$Weight[i+8+1], stats3$Seed[i+8], stats3$Seed[i+8+1])
+    stats4$Team[j+4] <- ifelse(stats3$Weight[i+8] > stats3$Weight[i+8+1], stats3$Team[i+8], stats3$Team[i+8+1])
+    stats4$Weight[j+4] <- ifelse(stats3$Weight[i+8] > stats3$Weight[i+8+1], stats3$Weight[i+8], stats3$Weight[i+8+1])
+    
+    stats4$Seed[j+6] <- ifelse(stats3$Weight[i+12] > stats3$Weight[i+12+1], stats3$Seed[i+12], stats3$Seed[i+12+1])
+    stats4$Team[j+6] <- ifelse(stats3$Weight[i+12] > stats3$Weight[i+12+1], stats3$Team[i+12], stats3$Team[i+12+1])
+    stats4$Weight[j+6] <- ifelse(stats3$Weight[i+12] > stats3$Weight[i+12+1], stats3$Weight[i+12], stats3$Weight[i+12+1])
     j <- j+1
   }
   
   stats4 <<- stats4
   
-  
+
+
   output$table <- renderDT(datatable(stats %>% 
-                           select(-c(WinPerc, EM, Orank,Drank,Tempo,ppgR, rpgR,apgR,`3R`,SoSR, eFGR, TOVR, TRBR, FTR, img)) %>% 
+                           select(-c(WinPerc, EM, Orank,Drank,Tempo,ppgR, rpgR,apgR,X3R,SoSR, eFGR, TOVR, TRBR, FTR, img)) %>% 
                            arrange(desc(Weight)),
-                           extensions='ColReorder', options=list(colReorder=T, scrollY=600, dom = 'ft'), rownames = F))
+                           extensions='ColReorder', options=list(colReorder=T, pageLength= 64, scrollY = 600), rownames = F))
   })
   
   ##RENDER BRACKET, TEXT, & IMAGES
@@ -111,159 +165,57 @@ server <- function(input, output, session){
   segments(140,c(7,41),140,c(23,57))
   segments(120,c(15,49),140,c(15,49))
   
-  size <- 8.5
+  size <- 9.5
   height <- 2
   start <- 65
-  j<-16
-  k<-16
-  m<- 9
   
-  for(i in 1:16){
-    if(i==m) break
+  for(i in seq(1,16,2)){
     text(size, start, str_pad(stats[i,1], width=30, side="right"), cex=.75, font=2)
     text(size,start,str_pad(stats[i,2], width=10, side="both"),cex=.75, font=2)
     start<- start - height
-    text(size, start, str_pad(stats[j,1], width=30, side="right"), cex=.75, font=2)
-    text(size,start,str_pad(stats[j,2], width=10, side="both"),cex=.75, font=2)
+    text(size, start, str_pad(stats[i+1,1], width=30, side="right"), cex=.75, font=2)
+    text(size,start,str_pad(stats[i+1,2], width=10, side="both"),cex=.75, font=2)
     start<- start - height
-    j=j-1
+
     
   }
   
+  q2 <- 30.75
+  for(i in seq(1,16,2)){
+    text(size, q2, str_pad(stats[16+i,1], width=30, side="right"), cex=.75, font=2)
+    text(size,q2,str_pad(stats[16+i,2], width=10, side="both"),cex=.75, font=2)
+    q2<- q2 - height
+    text(size, q2, str_pad(stats[16+i+1,1], width=30, side="right"), cex=.75, font=2)
+    text(size,q2,str_pad(stats[16+i+1,2], width=10, side="both"),cex=.75, font=2)
+    q2<- q2 - height
+    
+    
+  }
+  
+  q3 <- 65
+  size <- 217.5
+  for(i in seq(1,16,2)){
+    text(size, q3, str_pad(stats[32+i,1], width=15, side="left"), cex=.75, font=2)
+    text(size,q3,str_pad(stats[32+i,2], width=30, side="right"),cex=.75, font=2)
+    q3<- q3 - height
+    text(size, q3, str_pad(stats[32+i+1,1], width=15, side="left"), cex=.75, font=2)
+    text(size,q3,str_pad(stats[32+i+1,2], width=30, side="right"),cex=.75, font=2)
+    q3<- q3 - height
+    
+    
+  }
+  q4 <- 30.75
+  for(i in seq(1,16,2)){
+    text(size, q4, str_pad(stats[48+i,1], width=15, side="left"), cex=.75, font=2)
+    text(size,q4,str_pad(stats[48+i,2], width=30, side="right"),cex=.75, font=2)
+    q4<- q4 - height
+    text(size, q4, str_pad(stats[48+i+1,1], width=15, side="left"), cex=.75, font=2)
+    text(size,q4,str_pad(stats[48+i+1,2], width=30, side="right"),cex=.75, font=2)
+    q4<- q4 - height
+    
+    
+  }
 
-  
-  
-  # text(8.5,65,paste0(stats[1,1], " ", stats[1,2]),cex=.8, font=2)
-  # text(8.5,63,paste0(stats[16,1], " ", stats[16,2]),cex=.8, font=2)
-  # text(8.5,61,paste0(stats[8,1], " ", stats[8,2]),cex=.8, font=2)
-  # text(8.5,59,paste0(stats[9,1], " ", stats[9,2]),cex=.8, font=2)
-  # text(9.8,60.5,subw1[2,13],cex=.4)
-  # 
-  # text(9.8,58.5,subw1[2,14],cex=.4)
-  # 
-  # text(9.8,56.5,subw1[3,13],cex=.4)
-  # 
-  # text(9.8,54.5,subw1[3,14],cex=.4)
-  # 
-  # text(9.8,52.5,subw1[4,13],cex=.4)
-  # 
-  # text(9.8,50.5,subw1[4,14],cex=.4)
-  # 
-  # text(9.8,48.5,subw1[5,13],cex=.4)
-  # 
-  # text(9.8,46.5,subw1[5,14],cex=.4)
-  # 
-  # text(9.8,44.5,subw1[6,13],cex=.4)
-  # 
-  # text(9.8,42.5,subw1[6,14],cex=.4)
-  # 
-  # text(9.8,40.5,subw1[7,13],cex=.4)
-  # 
-  # text(9.8,38.5,subw1[7,14],cex=.4)
-  # 
-  # text(9.8,36.5,subw1[8,13],cex=.4)
-  # 
-  # text(9.8,34.5,subw1[8,14],cex=.4)
-  # 
-  # 
-  # text(9.8,30.5,suby1[1,13],cex=.4)
-  # 
-  # text(9.8,28.5,suby1[1,14],cex=.4)
-  # 
-  # text(9.8,26.5,suby1[2,13],cex=.4)
-  # 
-  # text(9.8,24.5,suby1[2,14],cex=.4)
-  # 
-  # text(9.8,22.5,suby1[3,13],cex=.4)
-  # 
-  # text(9.8,20.5,suby1[3,14],cex=.4)
-  # 
-  # text(9.8,18.5,suby1[4,13],cex=.4)
-  # 
-  # text(9.8,16.5,suby1[4,14],cex=.4)
-  # 
-  # text(9.8,14.5,suby1[5,13],cex=.4)
-  # 
-  # text(9.8,12.5,suby1[5,14],cex=.4)
-  # 
-  # text(9.8,10.5,suby1[6,13],cex=.4)
-  # 
-  # text(9.8,8.5,suby1[6,14],cex=.4)
-  # 
-  # text(9.8,6.5,suby1[7,13],cex=.4)
-  # 
-  # text(9.8,4.5,suby1[7,14],cex=.4)
-  # 
-  # text(9.8,2.5,suby1[8,13],cex=.4)
-  # 
-  # text(9.8,0.5,suby1[8,14],cex=.4)
-  # 
-  # text(209.8,64.5,subx1[1,13],cex=.4)
-  # 
-  # text(209.8,62.5,subx1[1,14],cex=.4)
-  # 
-  # text(209.8,60.5,subx1[2,13],cex=.4)
-  # 
-  # text(209.8,58.5,subx1[2,14],cex=.4)
-  # 
-  # text(209.8,56.5,subx1[3,13],cex=.4)
-  # 
-  # text(209.8,54.5,subx1[3,14],cex=.4)
-  # 
-  # text(209.8,52.5,subx1[4,13],cex=.4)
-  # 
-  # text(209.8,50.5,subx1[4,14],cex=.4)
-  # 
-  # text(209.8,48.5,subx1[5,13],cex=.4)
-  # 
-  # text(209.8,46.5,subx1[5,14],cex=.4)
-  # 
-  # text(209.8,44.5,subx1[6,13],cex=.4)
-  # 
-  # text(209.8,42.5,subx1[6,14],cex=.4)
-  # 
-  # text(209.8,40.5,subx1[7,13],cex=.4)
-  # 
-  # text(209.8,38.5,subx1[7,14],cex=.4)
-  # 
-  # text(209.8,36.5,subx1[8,13],cex=.4)
-  # 
-  # text(209.8,34.5,subx1[8,14],cex=.4)
-  # 
-  # 
-  # text(209.8,30.5,subz1[1,13],cex=.4)
-  # 
-  # text(209.8,28.5,subz1[1,14],cex=.4)
-  # 
-  # text(209.8,26.5,subz1[2,13],cex=.4)
-  # 
-  # text(209.8,24.5,subz1[2,14],cex=.4)
-  # 
-  # text(209.8,22.5,subz1[3,13],cex=.4)
-  # 
-  # text(209.8,20.5,subz1[3,14],cex=.4)
-  # 
-  # text(209.8,18.5,subz1[4,13],cex=.4)
-  # 
-  # text(209.8,16.5,subz1[4,14],cex=.4)
-  # 
-  # text(209.8,14.5,subz1[5,13],cex=.4)
-  # 
-  # text(209.8,12.5,subz1[5,14],cex=.4)
-  # 
-  # text(209.8,10.5,subz1[6,13],cex=.4)
-  # 
-  # text(209.8,8.5,subz1[6,14],cex=.4)
-  # 
-  # text(209.8,6.5,subz1[7,13],cex=.4)
-  # 
-  # text(209.8,4.5,subz1[7,14],cex=.4)
-  # 
-  # text(209.8,2.5,subz1[8,13],cex=.4)
-  # 
-  # text(209.8,0.5,subz1[8,14],cex=.4)
-  # 
-  
   })
   
   
@@ -302,297 +254,174 @@ server <- function(input, output, session){
     size <- 8.5
     height <- 2
     start <- 65
-    j<-16
-    k<-16
-    m<- 9
+    q2 <- 30.75
+    q3 <- 65
+    q4 <- 30.75
     #1st round
-    for(i in 1:16){
-      if(i==m) break
+    for(i in seq(1,16,2)){
       text(size, start, str_pad(stats[i,1], width=30, side="right"), cex=.75, font=2)
       text(size, start, str_pad(stats[i,2], width=10, side="both"),cex=.75, font=2)
       start<- start - height
-      text(size, start, str_pad(stats[j,1], width=30, side="right"), cex=.75, font=2)
-      text(size, start, str_pad(stats[j,2], width=10, side="both"),cex=.75, font=2)
+      text(size, start, str_pad(stats[i+1,1], width=30, side="right"), cex=.75, font=2)
+      text(size, start, str_pad(stats[i+1,2], width=10, side="both"),cex=.75, font=2)
       start<- start - height
-      j=j-1
+ 
+      text(size, q2, str_pad(stats[16+i,1], width=30, side="right"), cex=.75, font=2)
+      text(size,q2,str_pad(stats[16+i,2], width=10, side="both"),cex=.75, font=2)
+      q2<- q2 - height
+      text(size, q2, str_pad(stats[16+i+1,1], width=30, side="right"), cex=.75, font=2)
+      text(size,q2,str_pad(stats[16+i+1,2], width=10, side="both"),cex=.75, font=2)
+      q2<- q2 - height
+      
+      text(217.5, q3, str_pad(stats[32+i,1], width=15, side="left"), cex=.75, font=2)
+      text(217.5,q3,str_pad(stats[32+i,2], width=30, side="right"),cex=.75, font=2)
+      q3<- q3 - height
+      text(217.5, q3, str_pad(stats[32+i+1,1], width=15, side="left"), cex=.75, font=2)
+      text(217.5,q3,str_pad(stats[32+i+1,2], width=30, side="right"),cex=.75, font=2)
+      q3<- q3 - height
+      
+      text(217.5, q4, str_pad(stats[48+i,1], width=15, side="left"), cex=.75, font=2)
+      text(217.5,q4,str_pad(stats[48+i,2], width=30, side="right"),cex=.75, font=2)
+      q4<- q4 - height
+      text(217.5, q4, str_pad(stats[48+i+1,1], width=15, side="left"), cex=.75, font=2)
+      text(217.5,q4,str_pad(stats[48+i+1,2], width=30, side="right"),cex=.75, font=2)
+      q4<- q4 - height
+      
+      
       
     }
+
+ 
     #2nd round
     start2 <-64
-    for(i in 1:8){
-      text(31, start2, str_pad(stats2[i,1], width=30, side="right"), cex=.75, font=2)
-      text(31, start2, str_pad(stats2[i,2], width=6, side="both"),cex=.75, font=2)
-      start2<- start2 - 4
+    temp <- 64
+    temp2 <- 30
+    temp3 <- 30
+
+    for(i in seq(1,8,2)){
+      text(31, temp, str_pad(stats2[i,1], width=30, side="right"), cex=.75, font=2)
+      text(31, temp, str_pad(stats2[i,2], width=6, side="both"),cex=.75, font=2)
+      temp <- temp - 4
+      text(31, temp, str_pad(stats2[i+1,1], width=30, side="right"), cex=.75, font=2)
+      text(31, temp, str_pad(stats2[i+1,2], width=6, side="both"),cex=.75, font=2)
+      temp <- temp - 4
+      text(31, temp2, str_pad(stats2[i+8,1], width=30, side="right"), cex=.75, font=2)
+      text(31, temp2, str_pad(stats2[i+8,2], width=6, side="both"),cex=.75, font=2)
+      temp2 <- temp2 -4
+      text(31, temp2, str_pad(stats2[i+8+1,1], width=30, side="right"), cex=.75, font=2)
+      text(31, temp2, str_pad(stats2[i+8+1,2], width=6, side="both"),cex=.75, font=2)
+      temp2 <- temp2 -4
+      
+      text(196, start2, str_pad(stats2[16+i,1], width=6, side="left"), cex=.75, font=2)
+      text(196, start2 ,str_pad(stats2[16+i,2], width=30, side="right"),cex=.75, font=2)
+      start2 <- start2-4
+      text(196, start2, str_pad(stats2[16+i+1,1], width=6, side="left"), cex=.75, font=2)
+      text(196, start2 ,str_pad(stats2[16+i+1,2], width=30, side="right"),cex=.75, font=2)
+      start2 <- start2 -4
+      text(196, temp3, str_pad(stats2[24+i,1], width=6, side="left"), cex=.75, font=2)
+      text(196, temp3 ,str_pad(stats2[24+i,2], width=30, side="right"),cex=.75, font=2)
+      temp3 <- temp3 -4
+      text(196, temp3, str_pad(stats2[24+i+1,1], width=6, side="left"), cex=.75, font=2)
+      text(196, temp3 ,str_pad(stats2[24+i+1,2], width=30, side="right"),cex=.75, font=2)
+      temp3 <- temp3 -4
+      
+
     }
     
+    
+    
     start2 <- 62
-    for(i in 1:4){
+    temp <- 62
+    temp1 <- 28
+    temp2 <- 28
+    for(i in seq(1,4,2)){
       text(50, start2, str_pad(stats3[i,1], width=30, side="right"), cex=.75, font=2)
-      text(50, start2, str_pad(stats3[i,2], width=6, side="both"),cex=.75, font=2)
-      start2<- start2 - 8
+      text(50, start2, str_pad(stats3[i,2], width=6, side="left"),cex=.75, font=2)
+      start2 <- start2 - 8
+      text(50, start2, str_pad(stats3[i+1,1], width=30, side="right"), cex=.75, font=2)
+      text(50, start2, str_pad(stats3[i+1,2], width=6, side="left"),cex=.75, font=2)
+      start2 <- start2 - 8
+      text(50, temp1, str_pad(stats3[i+4,1], width=30, side="right"), cex=.75, font=2)
+      text(50, temp1, str_pad(stats3[i+4,2], width=6, side="left"),cex=.75, font=2)
+      temp1 <- temp1 -8
+      text(50, temp1, str_pad(stats3[i+4+1,1], width=30, side="right"), cex=.75, font=2)
+      text(50, temp1, str_pad(stats3[i+4+1,2], width=6, side="left"),cex=.75, font=2)
+      temp1 <- temp1 -8
+      text(174, temp, str_pad(stats3[i+8,2], width=30, side="right"), cex=.75, font=2)
+      text(174, temp, str_pad(stats3[i+8,1], width=6, side="left"),cex=.75, font=2)
+      temp <- temp - 8
+      text(174, temp, str_pad(stats3[i+8+1,2], width=30, side="right"), cex=.75, font=2)
+      text(174, temp, str_pad(stats3[i+8+1,1], width=6, side="left"),cex=.75, font=2)
+      temp <- temp - 8
+      
+      text(174, temp2, str_pad(stats3[i+12,2], width=30, side="right"), cex=.75, font=2)
+      text(174, temp2, str_pad(stats3[i+12,1], width=6, side="left"),cex=.75, font=2)
+      temp2<- temp2 - 8
+      text(174, temp2, str_pad(stats3[i+12+1,2], width=30, side="right"), cex=.75, font=2)
+      text(174, temp2, str_pad(stats3[i+12+1,1], width=6, side="left"),cex=.75, font=2)
+      temp2<- temp2 - 8
     }
     
 
     text(72, 58, str_pad(stats4[1,1], width=30, side="right"), cex=.75, font=2)
     text(72, 58, str_pad(stats4[1,2], width=6, side="both"),cex=.75, font=2)
-    
     text(72, 42, str_pad(stats4[2,1], width=30, side="right"), cex=.75, font=2)
     text(72, 42, str_pad(stats4[2,2], width=6, side="both"),cex=.75, font=2)
-    # 
-    # text(9.8,62.5,subw1[1,14],cex=.4)
-    # 
-    # text(9.8,60.5,subw1[2,13],cex=.4)
-    # 
-    # text(9.8,58.5,subw1[2,14],cex=.4)
-    # 
-    # text(9.8,56.5,subw1[3,13],cex=.4)
-    # 
-    # text(9.8,54.5,subw1[3,14],cex=.4)
-    # 
-    # text(9.8,52.5,subw1[4,13],cex=.4)
-    # 
-    # text(9.8,50.5,subw1[4,14],cex=.4)
-    # 
-    # text(9.8,48.5,subw1[5,13],cex=.4)
-    # 
-    # text(9.8,46.5,subw1[5,14],cex=.4)
-    # 
-    # text(9.8,44.5,subw1[6,13],cex=.4)
-    # 
-    # text(9.8,42.5,subw1[6,14],cex=.4)
-    # 
-    # text(9.8,40.5,subw1[7,13],cex=.4)
-    # 
-    # text(9.8,38.5,subw1[7,14],cex=.4)
-    # 
-    # text(9.8,36.5,subw1[8,13],cex=.4)
-    # 
-    # text(9.8,34.5,subw1[8,14],cex=.4)
-    # 
-    # text(29.8,63.5,"subw2[1,13]",cex=.4)
-    # 
-    # text(29.8,59.5,subw2[1,14],cex=.4)
-    # 
-    # text(29.8,55.5,subw2[2,13],cex=.4)
-    # 
-    # text(29.8,51.5,subw2[2,14],cex=.4)
-    # 
-    # text(29.8,47.5,subw2[3,13],cex=.4)
-    # 
-    # text(29.8,43.5,subw2[3,14],cex=.4)
-    # 
-    # text(29.8,39.5,subw2[4,13],cex=.4)
-    # 
-    # text(29.8,35.5,subw2[4,14],cex=.4)
-    # 
-    # text(49.8,61.5,subw3[1,13],cex=.4)
-    # 
-    # text(49.8,53.5,subw3[1,14],cex=.4)
-    # 
-    # text(49.8,45.5,subw3[2,13],cex=.4)
-    # 
-    # text(49.8,37.5,subw3[2,14],cex=.4)
-    # 
-    # text(69.8,57.5,subw4[1,11],cex=.4)
-    # 
-    # text(69.8,41.5,subw4[1,12],cex=.4)
-    # 
-    # text(9.8,30.5,suby1[1,13],cex=.4)
-    # 
-    # text(9.8,28.5,suby1[1,14],cex=.4)
-    # 
-    # text(9.8,26.5,suby1[2,13],cex=.4)
-    # 
-    # text(9.8,24.5,suby1[2,14],cex=.4)
-    # 
-    # text(9.8,22.5,suby1[3,13],cex=.4)
-    # 
-    # text(9.8,20.5,suby1[3,14],cex=.4)
-    # 
-    # text(9.8,18.5,suby1[4,13],cex=.4)
-    # 
-    # text(9.8,16.5,suby1[4,14],cex=.4)
-    # 
-    # text(9.8,14.5,suby1[5,13],cex=.4)
-    # 
-    # text(9.8,12.5,suby1[5,14],cex=.4)
-    # 
-    # text(9.8,10.5,suby1[6,13],cex=.4)
-    # 
-    # text(9.8,8.5,suby1[6,14],cex=.4)
-    # 
-    # text(9.8,6.5,suby1[7,13],cex=.4)
-    # 
-    # text(9.8,4.5,suby1[7,14],cex=.4)
-    # 
-    # text(9.8,2.5,suby1[8,13],cex=.4)
-    # 
-    # text(9.8,0.5,suby1[8,14],cex=.4)
-    # 
-    # text(29.8,29.5,suby2[1,13],cex=.4)
-    # 
-    # text(29.8,25.5,suby2[1,14],cex=.4)
-    # 
-    # text(29.8,21.5,suby2[2,13],cex=.4)
-    # 
-    # text(29.8,17.5,suby2[2,14],cex=.4)
-    # 
-    # text(29.8,13.5,suby2[3,13],cex=.4)
-    # 
-    # text(29.8,9.5,suby2[3,14],cex=.4)
-    # 
-    # text(29.8,5.5,suby2[4,13],cex=.4)
-    # 
-    # text(29.8,1.5,suby2[4,14],cex=.4)
-    # 
-    # text(49.8,27.5,suby3[1,13],cex=.4)
-    # 
-    # text(49.8,19.5,suby3[1,14],cex=.4)
-    # 
-    # text(49.8,11.5,suby3[2,13],cex=.4)
-    # 
-    # text(49.8,3.5,suby3[2,14],cex=.4)
-    # 
-    # text(69.8,23.5,suby4[1,11],cex=.4)
-    # 
-    # text(69.8,7.5,suby4[1,12],cex=.4)
-    # 
-    # text(209.8,64.5,subx1[1,13],cex=.4)
-    # 
-    # text(209.8,62.5,subx1[1,14],cex=.4)
-    # 
-    # text(209.8,60.5,subx1[2,13],cex=.4)
-    # 
-    # text(209.8,58.5,subx1[2,14],cex=.4)
-    # 
-    # text(209.8,56.5,subx1[3,13],cex=.4)
-    # 
-    # text(209.8,54.5,subx1[3,14],cex=.4)
-    # 
-    # text(209.8,52.5,subx1[4,13],cex=.4)
-    # 
-    # text(209.8,50.5,subx1[4,14],cex=.4)
-    # 
-    # text(209.8,48.5,subx1[5,13],cex=.4)
-    # 
-    # text(209.8,46.5,subx1[5,14],cex=.4)
-    # 
-    # text(209.8,44.5,subx1[6,13],cex=.4)
-    # 
-    # text(209.8,42.5,subx1[6,14],cex=.4)
-    # 
-    # text(209.8,40.5,subx1[7,13],cex=.4)
-    # 
-    # text(209.8,38.5,subx1[7,14],cex=.4)
-    # 
-    # text(209.8,36.5,subx1[8,13],cex=.4)
-    # 
-    # text(209.8,34.5,subx1[8,14],cex=.4)
-    # 
-    # text(189.8,63.5,subx2[1,13],cex=.4)
-    # 
-    # text(189.8,59.5,subx2[1,14],cex=.4)
-    # 
-    # text(189.8,55.5,subx2[2,13],cex=.4)
-    # 
-    # text(189.8,51.5,subx2[2,14],cex=.4)
-    # 
-    # text(189.8,47.5,subx2[3,13],cex=.4)
-    # 
-    # text(189.8,43.5,subx2[3,14],cex=.4)
-    # 
-    # text(189.8,39.5,subx2[4,13],cex=.4)
-    # 
-    # text(189.8,35.5,subx2[4,14],cex=.4)
-    # 
-    # text(169.8,61.5,subx3[1,13],cex=.4)
-    # 
-    # text(169.8,53.5,subx3[1,14],cex=.4)
-    # 
-    # text(169.8,45.5,subx3[2,13],cex=.4)
-    # 
-    # text(169.8,37.5,subx3[2,14],cex=.4)
-    # 
-    # text(149.8,57.5,subx4[1,11],cex=.4)
-    # 
-    # text(149.8,41.5,subx4[1,12],cex=.4)
-    # 
-    # text(209.8,30.5,subz1[1,13],cex=.4)
-    # 
-    # text(209.8,28.5,subz1[1,14],cex=.4)
-    # 
-    # text(209.8,26.5,subz1[2,13],cex=.4)
-    # 
-    # text(209.8,24.5,subz1[2,14],cex=.4)
-    # 
-    # text(209.8,22.5,subz1[3,13],cex=.4)
-    # 
-    # text(209.8,20.5,subz1[3,14],cex=.4)
-    # 
-    # text(209.8,18.5,subz1[4,13],cex=.4)
-    # 
-    # text(209.8,16.5,subz1[4,14],cex=.4)
-    # 
-    # text(209.8,14.5,subz1[5,13],cex=.4)
-    # 
-    # text(209.8,12.5,subz1[5,14],cex=.4)
-    # 
-    # text(209.8,10.5,subz1[6,13],cex=.4)
-    # 
-    # text(209.8,8.5,subz1[6,14],cex=.4)
-    # 
-    # text(209.8,6.5,subz1[7,13],cex=.4)
-    # 
-    # text(209.8,4.5,subz1[7,14],cex=.4)
-    # 
-    # text(209.8,2.5,subz1[8,13],cex=.4)
-    # 
-    # text(209.8,0.5,subz1[8,14],cex=.4)
-    # 
-    # text(189.8,29.5,subz2[1,13],cex=.4)
-    # 
-    # text(189.8,25.5,subz2[1,14],cex=.4)
-    # 
-    # text(189.8,21.5,subz2[2,13],cex=.4)
-    # 
-    # text(189.8,17.5,subz2[2,14],cex=.4)
-    # 
-    # text(189.8,13.5,subz2[3,13],cex=.4)
-    # 
-    # text(189.8,9.5,subz2[3,14],cex=.4)
-    # 
-    # text(189.8,5.5,subz2[4,13],cex=.4)
-    # 
-    # text(189.8,1.5,subz2[4,14],cex=.4)
-    # 
-    # text(169.8,27.5,subz3[1,13],cex=.4)
-    # 
-    # text(169.8,19.5,subz3[1,14],cex=.4)
-    # 
-    # text(169.8,11.5,subz3[2,13],cex=.4)
-    # 
-    # text(169.8,3.5,subz3[2,14],cex=.4)
-    # 
-    # text(149.8,23.5,subz4[1,11],cex=.4)
-    # 
-    # text(149.8,7.5,subz4[1,12],cex=.4)
-    # 
-     FinalFour <- ifelse(stats4$Weight[1] > stats4$Weight[2], stats4$Team[1], stats4$Team[2])
-     text(91,46.5,paste0((stats %>% filter(Team==FinalFour))$Seed, " ", (stats %>% filter(Team==FinalFour))$Team),cex=1.4, family="mono", font =2)
-     img <- readPNG((stats %>% filter(Team==FinalFour))$img)
-     rasterImage(img, 82,50,99,65)
-    # 
-    # text(129.8,49.5,subff[1,13],cex=.4)
-    # 
-    # text(89.8,15.5,subff[2,12],cex=.4)
-    # 
-    # text(129.8,15.5,subff[2,13],cex=.4)
-    # 
-    # text(109.8,37.5,subfinal[1,11],cex=.4)
-    # 
-    # text(109.8,27.5,subfinal[1,12],cex=.4)
-    # 
-     text(109.8,32.5,(stats %>% filter(Team==FinalFour))$Team,cex=2.8, font =2, family="mono")
+    text(72, 24, str_pad(stats4[3,1], width=30, side="right"), cex=.75, font=2)
+    text(72, 24, str_pad(stats4[3,2], width=6, side="both"),cex=.75, font=2)
+    text(72, 8, str_pad(stats4[4,1], width=30, side="right"), cex=.75, font=2)
+    text(72, 8, str_pad(stats4[4,2], width=6, side="both"),cex=.75, font=2)
+    text(152, 58, str_pad(stats4[5,2], width=30, side="right"), cex=.75, font=2)
+    text(152, 58, str_pad(stats4[5,1], width=6, side="left"),cex=.75, font=2)
+    text(152, 42, str_pad(stats4[6,2], width=30, side="right"), cex=.75, font=2)
+    text(152, 42, str_pad(stats4[6,1], width=6, side="left"),cex=.75, font=2)
+    text(152, 24, str_pad(stats4[7,2], width=30, side="right"), cex=.75, font=2)
+    text(152, 24, str_pad(stats4[7,1], width=6, side="left"),cex=.75, font=2)
+    text(152, 8, str_pad(stats4[8,2], width=30, side="right"), cex=.75, font=2)
+    text(152, 8, str_pad(stats4[8,1], width=6, side="left"),cex=.75, font=2)
+
+    
+    FinalFour <- character(4)
+    FinalFour[1] <- ifelse(stats4$Weight[1] > stats4$Weight[2], stats4$Team[1], stats4$Team[2])
+    FinalFour[2] <- ifelse(stats4$Weight[3] > stats4$Weight[4], stats4$Team[3], stats4$Team[4])
+    FinalFour[3] <- ifelse(stats4$Weight[5] > stats4$Weight[6], stats4$Team[5], stats4$Team[6])
+    FinalFour[4] <- ifelse(stats4$Weight[7] > stats4$Weight[8], stats4$Team[7], stats4$Team[8])
+    
+    text(91,46.5,paste0((stats %>% filter(Team==FinalFour[1]))$Seed, " ", (stats %>% filter(Team==FinalFour[1]))$Team),cex=1.4, family="mono", font =2)
+    img <- readPNG((stats %>% filter(Team==FinalFour[1]))$img)
+    rasterImage(img, 82,50,99,65)
+    
+
+    text(91,16.5,paste0((stats %>% filter(Team==FinalFour[2]))$Seed, " ", (stats %>% filter(Team==FinalFour[2]))$Team),cex=1.4, family="mono", font =2)
+    img <- readPNG((stats %>% filter(Team==FinalFour[2]))$img)
+    rasterImage(img, 82,0,99,15)
+    text(129,46.5,paste0((stats %>% filter(Team==FinalFour[3]))$Team, " ", (stats %>% filter(Team==FinalFour[3]))$Seed),cex=1.4, family="mono", font =2)
+    text(129,16.5,paste0((stats %>% filter(Team==FinalFour[4]))$Team, " ", (stats %>% filter(Team==FinalFour[4]))$Seed),cex=1.4, family="mono", font =2)
+    
+    img <- readPNG((stats %>% filter(Team==FinalFour[4]))$img)
+    rasterImage(img, 120,0,137,15)
+    img <- readPNG((stats %>% filter(Team==FinalFour[3]))$img)
+    rasterImage(img, 120,50,137,65)
+    
+ 
+
+    Finals1 <- ifelse((stats %>% filter(Team==FinalFour[1]) %>% select(Weight)) > (stats %>% filter(Team==FinalFour[2]) %>% select(Weight)),
+                        (stats %>% filter(Team==FinalFour[1]) %>% select(Team)), (stats %>% filter(Team==FinalFour[2]) %>% select(Team)))
+    
+    Finals2 <- ifelse((stats %>% filter(Team==FinalFour[3]) %>% select(Weight)) > (stats %>% filter(Team==FinalFour[4]) %>% select(Weight)),
+                      (stats %>% filter(Team==FinalFour[3]) %>% select(Team)), (stats %>% filter(Team==FinalFour[4]) %>% select(Team)))
+    
+
+    
+
+    text(109.8, 39.5, str_pad((stats %>% filter(Team==Finals1[[1]]))$Team, width=6, side="both"),cex=1.4, font=2, family="mono")
+    text(109.8, 24.5, str_pad((stats %>% filter(Team==Finals2[[1]]))$Team, width=6, side="both"),cex=1.4, font=2, family="mono")
+    
+    
+    Finals <- stats2 %>% filter(Team %in% c(Finals1[[1]], Finals2[[1]])) %>% arrange(desc(Weight))
+    
+    
+    text(109.8,32.5,(Finals[1,2]),cex=2.8, font =2, family="mono")
     
     
     

@@ -1,10 +1,14 @@
+library(DT)
 library(shinythemes)
 library(shiny)
 library(shinydashboard)
-navbarPage("BracketBuilder",
+ui <- function(request){ navbarPage("BracketBuilder",
            theme=shinytheme("cosmo"),
            tabPanel("Bracket", icon=icon('basketball-ball'),
                  box(width="100%",
+                     tags$head(HTML('<link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">')),
+                     tags$head(HTML('<style>* {font-size: 98%; font-family: Roboto Mono;}</style>')),
+                     h2(HTML("<b><center> 2021 NCAA Basketball Tournament  </center> </b>")),
                      plotOutput("bracket",height = "600")),
                 
               
@@ -37,8 +41,8 @@ navbarPage("BracketBuilder",
                                     <a href='https://twitter.com/share' 
                                     class='twitter-share-button' 
                                     align='middle' 
-                                    data-url='https://github.com/AidanSmith42/MarchMadness' 
-                                    data-text='Build a customized NCAA Bracket with this app. #ShinyR #marchMadness' 
+                                    data-url='https://psmith54.shinyapps.io/bracketbuilder/' 
+                                    data-text='Build a customized NCAA Bracket with this app. #rstats #rshiny #MarchMadness' 
                                     data-size='large'>Tweet
                                     </a>
                                    <script>!function(d,s,id){
@@ -60,14 +64,14 @@ navbarPage("BracketBuilder",
                            sliderInput("PPG", "Points Per Game", min=0, max=10, value=0, width = "100%"),
                            sliderInput("RPG", "Rebounds Per Game", min=0, max=10, value=0, width = "100%"),
                            sliderInput("APG", "Assists Per Game", min=0, max=10, value=0, width = "100%"),
-                           sliderInput("Three", "3 Pt %", min=0, max=10, value=0, width="100%"),
+                           sliderInput("Three", "3 Pointers Per Game", min=0, max=10, value=0, width="100%"),
                            sliderInput("SoS", "Strength of Schedule", min=0, max=10, value=0, width = "100%"))),
                     column(4,
                            h2(HTML("<b><center>Efficiency Stats</center></b>")),
                            wellPanel(
                            sliderInput("OEff", "Offense Efficiency", min=0, max=10, value=0, width = "100%"),
                            sliderInput("DEff", "Defense Efficiency", min=0, max=10, value=0, width = "100%"),
-                           sliderInput("EffM", "Total Efficiency Margin", min=0, max=10, value=0, width = "100%"),
+                           sliderInput("EffM", "Total Efficiency Margin", min=0, max=10, value=10, width = "100%"),
                            sliderInput("TEff", "Tempo", min=0, max=10, value=0, width = "100%"),
                            sliderInput("WinPer", "Win %", min=0, max=10, value=0, width = "100%"))),
                     column(4,
@@ -84,7 +88,7 @@ navbarPage("BracketBuilder",
                     DTOutput("table"))),
            tabPanel("About", icon=icon("book"),
                     box(width="100%",
-                      h2(HTML("<b><center> One Shiny Moment </center> </b>")),
+                      h2(HTML("<b><center> Descriptions </center> </b>")),
                       column(6,
                       wellPanel(
                       p(h4("It's that time of the year again. ", 
@@ -93,7 +97,7 @@ navbarPage("BracketBuilder",
                         br())),
                       HTML("<strong><font family='Light Italic'>Per Game Stats</font></strong>"),
                       p(h4("These stats are relatively straightforward.", "These include the average number of Points, Rebounds, and Assists per game.",
-                           "Additionally there is 3P% which is the percentage of 3 Pointers made ( 3PointMade / 3PointAttempts).")),
+                           "Additionally there is 3P% which is the percentage of 3 Pointers made ( 3PM / 3PA).")),
                       HTML("<strong><font family='Light Italic'>Strength of Schedule</font></strong>"),
                       h4("A standardized rating of strength of schedule.",br()," The rating is denominated in points above/below average, where zero is average. Non-Division I games are excluded from the ratings."),
                       HTML("<strong><font family='Light Italic'>Offensive Efficiency</font></strong>"),
@@ -105,7 +109,7 @@ navbarPage("BracketBuilder",
                       HTML("<strong><font family='Light Italic'>Tempo</font></strong>"),
                       p(h4("An estimate of the tempo (possessions per 40 minutes) a team would have against the team that wants to play at an average D-I tempo.")),
                       HTML("<strong><font family='Light Italic'>Win Percentage</font></strong>"),
-                      h4("The number of wins divided by the number of losses.")
+                      h4("The number of wins divided by the number of total games played.")
                       
                     )
                     ),
@@ -127,9 +131,9 @@ navbarPage("BracketBuilder",
                              p(h4("The rebounding factor is measured using Offensive and Defensive Rebound Percentage."," The formula for offense is ORB / (ORB + Opp DRB), while the formula for defense is DRB / (Opp ORB + DRB).")),
                              HTML("<strong><font family='Light Italic'>Free Throw Rate</font></strong>"),
                              p(h4("The free throw factor is a measure of both how often a team gets to the line and how often they make them.", "The formula for both offense and defense is FT / FGA.")),
-                             br(),
+                             hr(),
                              h5(HTML('<p>Data was scraped from
                                     <a href="https://kenpom.com/">kenpom.com</a> <a href="https://www.sports-reference.com/cbb/seasons/2020-advanced-school-stats.html">sports-reference.com/cbb</a></p>'))
                            ))))
-)
+)}
                 
